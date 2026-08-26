@@ -45,8 +45,8 @@
   h2 { font-size: 16px; border-left: 4px solid #7cb342; padding-left: 8px; margin-top: 28px; }
   .note { background: #fff8e1; border: 1px solid #f0e0a0; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
 
-  /* 直近1週間実績の行を薄黄色でハイライト */
-  tr.recentWeekRow td { background: #fff8e1; }
+  /* 直近1週間実績の行を黄色でハイライト */
+  tr.recentWeekRow td { background: #ffe082; }
 
   /* 生産量／人工／生産性：3ブロックを縦に並べる（案2レイアウト） */
   .metricBlockTitle {
@@ -560,11 +560,4 @@ function renderExecutivePage(overall) {
     'この進捗は「運搬（＝搬出量）」区分の累計を代理指標として使っています。' +
     '集計ルールの是非は酒井社長の確認待ちです。</div>';
   html += '<table><tr><th>年間目標(㎥)</th><th>累計実績(㎥・搬出量ベース)</th><th>進捗率(%)</th></tr>';
-  html += '<tr><td class="num">' + target + '</td><td class="num">' + actual + '</td><td class="num">' + pct + '</td></tr></table>';
-  return html;
-}
-
-</script>
-
-</body>
-</html>
+  html += '<tr><td class="num">' + target + '</td><td class="num">' + actual + '</td><t
