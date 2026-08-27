@@ -163,6 +163,11 @@ const CONFIG = {
   // 1人工あたりの標準労働時間（h）。【要確認】暫定値。
   HOURS_PER_NINKU: 8,
 
+  // 「全体」ページの月次計画／実績表に表示する期間（第1期：2026年5月〜2027年4月）
+  // 実績データがまだない月も含め、期の全月を表示するために使う。
+  FISCAL_YEAR_START: '2026-05',
+  FISCAL_YEAR_END: '2027-04',
+
   // パスワードのSHA-256ハッシュ（平文パスワードは書かない）。仮パスワード: test1234
   CORRECT_HASH: '937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244',
 };
@@ -285,6 +290,20 @@ function subtractDays(dateStr, days) {
   const d = new Date(dateStr + 'T00:00:00');
   d.setDate(d.getDate() - days);
   return d.toISOString().slice(0, 10);
+}
+
+// startYm〜endYm（'YYYY-MM'形式）の範囲の年月を、1か月ごとの配列にして返す
+// （実績データがない月も含めて期間全体を表示したい場合に使う）
+function generateMonthRange(startYm, endYm) {
+  const result = [];
+  let [y, m] = startYm.split('-').map(Number);
+  const [endY, endM] = endYm.split('-').map(Number);
+  while (y < endY || (y === endY && m <= endM)) {
+    result.push(y + '-' + String(m).padStart(2, '0'));
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  return result;
 }
 
 function aggregate(entries) {
@@ -450,7 +469,8 @@ function renderMetricBlock(name, s, opts) {
   html += '</table></div>';
 
   // --- 月次 計画／実績（横長表：7/14議事録モックアップ準拠） ---
-  const monthKeys = Object.keys(opts.monthlyActualByYm).sort();
+  // 期間指定（monthKeysOverride）があればその月一覧を、なければ実績データがある月だけを使う
+  const monthKeys = opts.monthKeysOverride || Object.keys(opts.monthlyActualByYm).sort();
   const totals = computeMonthlyTotals(name, monthKeys, opts.monthlyActualByYm, opts.targetFn);
   html += '<h2>月次 計画／実績</h2>';
   html += '<div class="table-scroll"><table>';
@@ -495,6 +515,11 @@ function renderSitePage(name, s) {
   const ninkuMonthlyActual = buildNinkuMonthlyActual(s);
   const productivityMonthlyActual = buildProductivityMonthlyActual(s.monthlyByCategory, ninkuMonthlyActual, monthKeys);
 
+  // 「全体」ページだけは、実績があるなしに関わらず第1期（2026年5月〜2027年4月）の全月を表示する
+  const monthKeysOverride = name === '全体'
+    ? generateMonthRange(CONFIG.FISCAL_YEAR_START, CONFIG.FISCAL_YEAR_END)
+    : undefined;
+
   let html = '<h2>' + name + '：現場実績</h2>';
   html += '<div class="note">データ最終更新日：' + (s.latestDate || '-') + '</div>';
 
@@ -506,6 +531,7 @@ function renderSitePage(name, s) {
     monthlyActualByYm: s.monthlyByCategory,
     targetFn: getMonthlyTarget,
     round: v => v,
+    monthKeysOverride: monthKeysOverride,
   });
 
   html += '<div class="metricArrow">↓</div>';
@@ -518,6 +544,7 @@ function renderSitePage(name, s) {
     monthlyActualByYm: ninkuMonthlyActual,
     targetFn: getMonthlyTargetNinku,
     round: round1,
+    monthKeysOverride: monthKeysOverride,
   });
 
   html += '<div class="metricArrow">↓</div>';
@@ -538,6 +565,7 @@ function renderSitePage(name, s) {
     monthlyActualByYm: productivityMonthlyActual,
     targetFn: getMonthlyTargetProductivity,
     round: round2,
+    monthKeysOverride: monthKeysOverride,
   });
 
   // --- 参考：進捗集計には含まない区分（切り捨て伐倒／その他作業） ---
